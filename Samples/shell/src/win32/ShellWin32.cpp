@@ -47,6 +47,8 @@ static Rml::U16String instance_name;
 static HWND window_handle = nullptr;
 static HINSTANCE instance_handle = nullptr;
 
+static bool has_dpi_support = false;
+static UINT window_dpi = USER_DEFAULT_SCREEN_DPI;
 static int window_width = 0;
 static int window_height = 0;
 
@@ -63,6 +65,23 @@ static HCURSOR cursor_cross = nullptr;
 static HCURSOR cursor_text = nullptr;
 static HCURSOR cursor_unavailable = nullptr;
 
+
+static void UpdateDpi()
+{
+	if(has_dpi_support)
+	{
+		UINT dpi = GetDpiForWindow(window_handle);
+		if (dpi != 0)
+		{
+			window_dpi = dpi;
+			if (context)
+			{
+				float dp_ratio = float(dpi) / float(USER_DEFAULT_SCREEN_DPI);
+				context->SetDensityIndependentPixelRatio(dp_ratio);
+			}
+		}
+	}
+}
 
 static void UpdateWindowDimensions(int width = 0, int height = 0)
 {
@@ -149,6 +168,19 @@ Rml::String Shell::FindSamplesRoot()
 
 bool Shell::OpenWindow(const char* in_name, ShellRenderInterfaceExtensions *_shell_renderer, unsigned int width, unsigned int height, bool allow_resize)
 {
+	// See if we have Per Monitor V2 DPI awareness. Requires Windows 10, version 1703.
+	FARPROC proc_SetProcessDpiAwarenessContext = GetProcAddress(
+		GetModuleHandle(TEXT("User32.dll")),
+		"SetProcessDpiAwarenessContext"
+	);
+	has_dpi_support = (proc_SetProcessDpiAwarenessContext != NULL);
+
+	// Activate Per Monitor V2.
+	if (has_dpi_support && !SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2))
+	{
+		has_dpi_support = false;
+	}
+
 	WNDCLASSW window_class;
 
 	Rml::U16String name = Rml::StringUtilities::ToUTF16(Rml::String(in_name));
@@ -178,7 +210,7 @@ bool Shell::OpenWindow(const char* in_name, ShellRenderInterfaceExtensions *_she
 								   (LPCWSTR)name.data(),
 								   WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_OVERLAPPEDWINDOW,
 								   0, 0,	// Window position.
-								   width, height,// Window size.
+								   0, 0,// Window size.
 								   nullptr,
 								   nullptr,
 								   instance_handle,
@@ -194,6 +226,10 @@ bool Shell::OpenWindow(const char* in_name, ShellRenderInterfaceExtensions *_she
 	window_width = width;
 	window_height = height;
 
+	UpdateDpi();
+	window_width = (width * window_dpi) / USER_DEFAULT_SCREEN_DPI;
+	window_height = (height * window_dpi) / USER_DEFAULT_SCREEN_DPI;
+
 	instance_name = name;
 
 	DWORD style = (allow_resize ? WS_OVERLAPPEDWINDOW : (WS_OVERLAPPEDWINDOW & ~WS_SIZEBOX & ~WS_MAXIMIZEBOX));
@@ -203,9 +239,12 @@ bool Shell::OpenWindow(const char* in_name, ShellRenderInterfaceExtensions *_she
 	RECT window_rect;
 	window_rect.top = 0;
 	window_rect.left = 0;
-	window_rect.right = width;
-	window_rect.bottom = height;
-	AdjustWindowRectEx(&window_rect, style, FALSE, extended_style);
+	window_rect.right = window_width;
+	window_rect.bottom = window_height;
+	if (has_dpi_support)
+		AdjustWindowRectExForDpi(&window_rect, style, FALSE, extended_style, window_dpi);
+	else
+		AdjustWindowRectEx(&window_rect, style, FALSE, extended_style);
 
 	SetWindowLong(window_handle, GWL_EXSTYLE, extended_style);
 	SetWindowLong(window_handle, GWL_STYLE, style);
@@ -219,6 +258,8 @@ bool Shell::OpenWindow(const char* in_name, ShellRenderInterfaceExtensions *_she
 			return false;
 		}
 	}
+
+	UpdateWindowDimensions();
 
 	// Resize the window.
 	SetWindowPos(window_handle, HWND_TOP, 0, 0, window_rect.right - window_rect.left, window_rect.bottom - window_rect.top, SWP_NOACTIVATE);
@@ -400,6 +441,7 @@ void Shell::GetClipboardText(Rml::String& text)
 void Shell::SetContext(Rml::Context* new_context)
 {
 	context = new_context;
+	UpdateDpi();
 	UpdateWindowDimensions();
 }
 
@@ -434,6 +476,21 @@ static LRESULT CALLBACK WindowProcedure(HWND local_window_handle, UINT message, 
 			int width = LOWORD(l_param);
 			int height = HIWORD(l_param);
 			UpdateWindowDimensions(width, height);
+		}
+		break;
+
+		case WM_DPICHANGED:
+		{
+			UpdateDpi();
+
+			RECT* const new_pos = (RECT*)l_param;
+			SetWindowPos(window_handle,
+				NULL,
+				new_pos->left,
+				new_pos->top,
+				new_pos->right - new_pos->left,
+				new_pos->bottom - new_pos->top,
+				SWP_NOZORDER | SWP_NOACTIVATE);
 		}
 		break;
 
