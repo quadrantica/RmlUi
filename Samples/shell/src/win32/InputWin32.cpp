@@ -95,14 +95,27 @@ void InputWin32::ProcessWindowsEvent(UINT message, WPARAM w_param, LPARAM l_para
 			Rml::Input::KeyIdentifier key_identifier = key_identifier_map[w_param];
 			int key_modifier_state = GetKeyModifierState();
 
-			// Check for F8 to toggle the debugger.
+			// Toggle debugger and set 'dp'-ratio with F-keys.
 			if (key_identifier == Rml::Input::KI_F8)
 			{
 				Rml::Debugger::SetVisible(!Rml::Debugger::IsVisible());
-				break;
 			}
-
-			context->ProcessKeyDown(key_identifier, key_modifier_state);
+			else if (key_identifier == Rml::Input::KI_F1)
+			{
+				context->SetDensityIndependentPixelRatio(key_modifier_state == Rml::Input::KM_SHIFT ? 1.f : Shell::GetDensityIndependentPixelRatio());
+			}
+			else if (key_identifier == Rml::Input::KI_F2)
+			{
+				context->SetDensityIndependentPixelRatio(context->GetDensityIndependentPixelRatio() / 1.2f);
+			}
+			else if (key_identifier == Rml::Input::KI_F3)
+			{
+				context->SetDensityIndependentPixelRatio(context->GetDensityIndependentPixelRatio() * 1.2f);
+			}
+			else
+			{
+				context->ProcessKeyDown(key_identifier, key_modifier_state);
+			}
 		}
 		break;
 

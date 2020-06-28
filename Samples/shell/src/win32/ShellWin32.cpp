@@ -75,10 +75,7 @@ static void UpdateDpi()
 		{
 			window_dpi = dpi;
 			if (context)
-			{
-				float dp_ratio = float(dpi) / float(USER_DEFAULT_SCREEN_DPI);
-				context->SetDensityIndependentPixelRatio(dp_ratio);
-			}
+				context->SetDensityIndependentPixelRatio(Shell::GetDensityIndependentPixelRatio());
 		}
 	}
 }
@@ -443,6 +440,11 @@ void Shell::SetContext(Rml::Context* new_context)
 	context = new_context;
 	UpdateDpi();
 	UpdateWindowDimensions();
+}
+
+float Shell::GetDensityIndependentPixelRatio()
+{
+	return float(window_dpi) / float(USER_DEFAULT_SCREEN_DPI);
 }
 
 static LRESULT CALLBACK WindowProcedure(HWND local_window_handle, UINT message, WPARAM w_param, LPARAM l_param)
