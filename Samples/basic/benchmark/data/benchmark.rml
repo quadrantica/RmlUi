@@ -5,23 +5,23 @@
 	<style>
 		body.window
 		{
-			max-width: 2000px;
-			max-height: 2000px;
-			width: 1600px;
-			height: 750px;
+			max-width: 2000dp;
+			max-height: 2000dp;
+			width: 1600dp;
+			height: 750dp;
 		}
 		#fps 
 		{
 			position: absolute;
-			top: 55px;
-			left: 20px;
+			top: 55dp;
+			left: 20dp;
 			font-size: 0.85em;
 			text-align: left;
 		}
 		#performance 
 		{
-			width: 800px;
-			height: 300px;
+			width: 800dp;
+			height: 300dp;
 			/*transform: scale(0.6) rotate(-60deg);*/
 		}
 	</style>
