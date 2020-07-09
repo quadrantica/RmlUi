@@ -587,6 +587,14 @@ float Element::GetZIndex() const
 	return z_index;
 }
 
+float Element::GetDensityIndependentPixelRatio()
+{
+	if (const Context* context = GetContext())
+		return context->GetDensityIndependentPixelRatio();
+
+	return 1.0f;
+}
+
 // Returns the element's font face handle.
 FontFaceHandle Element::GetFontFaceHandle() const
 {
@@ -1848,9 +1856,8 @@ void Element::ProcessDefaultAction(Event& event)
 					(wheel_delta > 0 && GetScrollHeight() > GetScrollTop() + GetClientHeight()))
 				{
 					// Defined as three times the default line-height, multiplied by the dp ratio.
-					float default_scroll_length = 3.f * DefaultComputedValues.line_height.value;
-					if (const Context* context = GetContext())
-						default_scroll_length *= context->GetDensityIndependentPixelRatio();
+					const float line_height = DefaultComputedValues.line_height.value;
+					const float default_scroll_length = 3.f * line_height * GetDensityIndependentPixelRatio();
 
 					SetScrollTop(GetScrollTop() + wheel_delta * default_scroll_length);
 				}

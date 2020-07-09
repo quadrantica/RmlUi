@@ -144,15 +144,6 @@ void ElementUtilities::GetElementsByClassName(ElementList& elements, Element* ro
 	}
 }
 
-float ElementUtilities::GetDensityIndependentPixelRatio(Element * element)
-{
-	Context* context = element->GetContext();
-	if (context == nullptr)
-		return 1.0f;
-
-	return context->GetDensityIndependentPixelRatio();
-}
-
 // Returns the width of a string rendered within the context of the given element.
 int ElementUtilities::GetStringWidth(Element* element, const String& string)
 {

@@ -100,7 +100,7 @@ DecoratorDataHandle DecoratorNinePatch::GenerateElementData(Element* element) co
 	// Change the size of the edges if specified.
 	if (edges)
 	{
-		const float dp_ratio = ElementUtilities::GetDensityIndependentPixelRatio(element);
+		const float dp_ratio = element->GetDensityIndependentPixelRatio();
 		float lengths[4]; // top, right, bottom, left
 		lengths[0] = element->ResolveNumericProperty(&(*edges)[0], dp_ratio * (surface_pos[1].y - surface_pos[0].y));
 		lengths[1] = element->ResolveNumericProperty(&(*edges)[1], dp_ratio * (surface_pos[3].x - surface_pos[2].x));

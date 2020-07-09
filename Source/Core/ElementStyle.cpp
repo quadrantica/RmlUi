@@ -356,7 +356,7 @@ float ElementStyle::ResolveNumericProperty(const Property* property, float base_
 	else if (property->unit & Property::ANGLE)
 		return ComputeAngle(*property);
 
-	const float dp_ratio = ElementUtilities::GetDensityIndependentPixelRatio(element);
+	const float dp_ratio = element->GetDensityIndependentPixelRatio();
 	const float font_size = element->GetComputedValues().font_size;
 
 	auto doc = element->GetOwnerDocument();
@@ -377,7 +377,7 @@ float ElementStyle::ResolveLength(const Property* property, RelativeTarget relat
 		auto doc = element->GetOwnerDocument();
 		const float doc_font_size = (doc ? doc->GetComputedValues().font_size : DefaultComputedValues.font_size);
 
-		float result = ComputeLength(property, element->GetComputedValues().font_size, doc_font_size, ElementUtilities::GetDensityIndependentPixelRatio(element));
+		float result = ComputeLength(property, element->GetComputedValues().font_size, doc_font_size, element->GetDensityIndependentPixelRatio());
 
 		return result;
 	}

@@ -1120,7 +1120,7 @@ void WidgetTextInput::GenerateCursor()
 	std::vector< int >& indices = cursor_geometry.GetIndices();
 	indices.resize(6);
 
-	cursor_size.x = ElementUtilities::GetDensityIndependentPixelRatio(text_element);
+	cursor_size.x = text_element->GetDensityIndependentPixelRatio();
 	cursor_size.y = text_element->GetLineHeight() + 2.0f;
 	GeometryUtilities::GenerateQuad(&vertices[0], &indices[0], Vector2f(0, 0), cursor_size, parent->GetProperty< Colourb >("color"));
 }

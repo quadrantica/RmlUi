@@ -179,6 +179,9 @@ public:
 	/// Returns the z-index of the element.
 	/// @return The element's z-index.
 	float GetZIndex() const;
+	/// Returns an element's density-independent pixel ratio, defined by its context.
+	/// @return The density-independent pixel ratio of the context, or 1.0 if no context assigned.
+	float GetDensityIndependentPixelRatio();
 
 	/// Returns the element's font face handle.
 	/// @return The element's font face handle.
