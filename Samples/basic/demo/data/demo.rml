@@ -624,7 +624,7 @@ progressbar {
 	</div>
 	
 	<p>When the ninepatch decorator is applied and the element is stretched, the following is rendered.</p>
-	<div style="width: 240dp; height: 50dp; decorator: ninepatch(textarea, textarea-inner, 1.0);"/>
+	<div style="width: 240dp; height: 50dp; decorator: ninepatch(textarea, textarea-inner);"/>
 	<p>Notice that the corners stay fixed, and the inner sprite is stretched. We can also control the rendered size of the edges, here the left edge is displayed at its native size and the others at half their size.</p>
 	<div style="width: 240dp; height: 50dp; decorator: ninepatch(textarea, textarea-inner, .5 .5 .5 1);"/>
 	

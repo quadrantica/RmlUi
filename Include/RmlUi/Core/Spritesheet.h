@@ -56,12 +56,12 @@ struct Spritesheet {
 	String image_source;
 	String definition_source;
 	int definition_line_number;
-	float image_inv_scale;
+	float sprite_display_scale; // The inverse of the 'src-scale' spritesheet property.
 	Texture texture;
 	StringList sprite_names;
 
 	Spritesheet(const String& name, const String& image_source, const String& definition_source,
-		int definition_line_number, float image_inv_scale, const Texture& texture);
+		int definition_line_number, float sprite_display_scale, const Texture& texture);
 };
 
 using SpritesheetMap = SmallUnorderedMap<String, SharedPtr<const Spritesheet>>; // key: spritesheet name (as given in @spritesheet)
@@ -74,7 +74,7 @@ using SpriteDefinitionList = std::vector<std::pair<String, Rectangle>>; // Sprit
 class SpritesheetList {
 public:
 	/// Adds a new sprite sheet to the list and inserts all sprites with unique names into the global list.
-	bool AddSpriteSheet(const String& name, const String& image_source, const String& definition_source, int definition_line_number, float image_inv_scale, const SpriteDefinitionList& sprite_definitions);
+	bool AddSpriteSheet(const String& name, const String& image_source, const String& definition_source, int definition_line_number, float sprite_display_scale, const SpriteDefinitionList& sprite_definitions);
 
 	/// Get a sprite from its name if it exists.
 	/// Note: The pointer is invalidated whenever another sprite is added. Do not store it around.

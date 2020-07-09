@@ -220,7 +220,7 @@ bool ElementImage::LoadTexture()
 					rect = sprite->rectangle;
 					rect_source = RectSource::Sprite;
 					texture = sprite->sprite_sheet->texture;
-					dimensions_scale = sprite->sprite_sheet->image_inv_scale * GetDensityIndependentPixelRatio();
+					dimensions_scale = sprite->sprite_sheet->sprite_display_scale * GetDensityIndependentPixelRatio();
 					valid_sprite = true;
 				}
 			}

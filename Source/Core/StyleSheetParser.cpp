@@ -451,8 +451,8 @@ int StyleSheetParser::Parse(StyleSheetNode* node, Stream* _stream, const StyleSh
 						}
 						else
 						{
-							const float image_inv_scale = 1.0f / image_scale;
-							spritesheet_list.AddSpriteSheet(at_rule_name, image_source, stream_file_name, (int)line_number, image_inv_scale, sprite_definitions);
+							const float sprite_display_scale = 1.0f / image_scale;
+							spritesheet_list.AddSpriteSheet(at_rule_name, image_source, stream_file_name, (int)line_number, sprite_display_scale, sprite_definitions);
 						}
 
 						spritesheet_property_parser.Clear();

@@ -49,7 +49,7 @@ static const Vector2f oriented_texcoords[4][2] = {
 	{Vector2f(1, 1), Vector2f(0, 0)}    // ROTATE_180
 };
 
-DecoratorTiled::Tile::Tile() : position(0, 0), size(0, 0)
+DecoratorTiled::Tile::Tile() : display_scale(1), position(0, 0), size(0, 0)
 {
 	texture_index = -1;
 	fit_mode = FILL;
@@ -82,7 +82,7 @@ void DecoratorTiled::Tile::CalculateDimensions(Element* element, const Texture& 
 			else
 				new_data.size = size;
 			
-			Vector2f size_relative = new_data.size / texture_dimensions;
+			const Vector2f size_relative = new_data.size / texture_dimensions;
 
 			new_data.size = Vector2f(Math::AbsoluteValue(new_data.size.x), Math::AbsoluteValue(new_data.size.y));
 
@@ -95,14 +95,17 @@ void DecoratorTiled::Tile::CalculateDimensions(Element* element, const Texture& 
 }
 
 // Get this tile's dimensions.
-Vector2f DecoratorTiled::Tile::GetDimensions(Element* element) const
+Vector2f DecoratorTiled::Tile::GetNaturalDimensions(Element* element) const
 {
 	RenderInterface* render_interface = element->GetRenderInterface();
 	auto data_iterator = data.find(render_interface);
 	if (data_iterator == data.end())
 		return Vector2f(0, 0);
 
-	return data_iterator->second.size;
+	const float scale_raw_to_natural_dimensions = element->GetDensityIndependentPixelRatio() * display_scale;
+	const Vector2f raw_dimensions = data_iterator->second.size;
+
+	return raw_dimensions * scale_raw_to_natural_dimensions;
 }
 
 // Generates geometry to render this tile across a surface.
@@ -133,6 +136,10 @@ void DecoratorTiled::Tile::GenerateGeometry(std::vector< Vertex >& vertices, std
 		scaled_texcoords[i] = data.texcoords[0] + oriented_texcoords[orientation][i] * (data.texcoords[1] - data.texcoords[0]);
 	}
 
+	//const float scale_raw_to_natural_dimensions = element->GetDensityIndependentPixelRatio() * display_scale;
+	//const Vector2f natural_tile_dimensions = tile_dimensions * scale_raw_to_natural_dimensions;
+	const Vector2f natural_tile_dimensions = tile_dimensions;
+
 	Vector2f final_tile_dimensions;
 	bool offset_and_clip_tile = false;
 
@@ -145,37 +152,37 @@ void DecoratorTiled::Tile::GenerateGeometry(std::vector< Vertex >& vertices, std
 	break;
 	case CONTAIN:
 	{
-		Vector2f scale_factor = surface_dimensions / tile_dimensions;
+		Vector2f scale_factor = surface_dimensions / natural_tile_dimensions;
 		float min_factor = std::min(scale_factor.x, scale_factor.y);
-		final_tile_dimensions = tile_dimensions * min_factor;
+		final_tile_dimensions = natural_tile_dimensions * min_factor;
 
 		offset_and_clip_tile = true;
 	}
 	break;
 	case COVER:
 	{
-		Vector2f scale_factor = surface_dimensions / tile_dimensions;
+		Vector2f scale_factor = surface_dimensions / natural_tile_dimensions;
 		float max_factor = std::max(scale_factor.x, scale_factor.y);
-		final_tile_dimensions = tile_dimensions * max_factor;
+		final_tile_dimensions = natural_tile_dimensions * max_factor;
 
 		offset_and_clip_tile = true;
 	}
 	break;
 	case SCALE_NONE:
 	{
-		final_tile_dimensions = tile_dimensions;
+		final_tile_dimensions = natural_tile_dimensions;
 		
 		offset_and_clip_tile = true;
 	}
 	break;
 	case SCALE_DOWN:
 	{
-		Vector2f scale_factor = surface_dimensions / tile_dimensions;
+		Vector2f scale_factor = surface_dimensions / natural_tile_dimensions;
 		float min_factor = std::min(scale_factor.x, scale_factor.y);
 		if (min_factor < 1.0f)
-			final_tile_dimensions = tile_dimensions * min_factor;
+			final_tile_dimensions = natural_tile_dimensions * min_factor;
 		else
-			final_tile_dimensions = tile_dimensions;
+			final_tile_dimensions = natural_tile_dimensions;
 
 		offset_and_clip_tile = true;
 	}
@@ -236,8 +243,9 @@ void DecoratorTiled::Tile::GenerateGeometry(std::vector< Vertex >& vertices, std
 }
 
 // Scales a tile dimensions by a fixed value along one axis.
-void DecoratorTiled::ScaleTileDimensions(Vector2f& tile_dimensions, float axis_value, int axis) const
+void DecoratorTiled::ScaleTileDimensions(Vector2f& tile_dimensions, float axis_value, Axis axis_enum) const
 {
+	int axis = static_cast<int>(axis_enum);
 	if (tile_dimensions[axis] != axis_value)
 	{
 		tile_dimensions[1 - axis] = tile_dimensions[1 - axis] * (axis_value / tile_dimensions[axis]);

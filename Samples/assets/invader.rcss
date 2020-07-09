@@ -305,7 +305,7 @@ input.text, input.password
 textarea
 {
 	padding: 14dp 12dp 10dp;
-	decorator: ninepatch( textarea, textarea-inner, 1.0 );
+	decorator: ninepatch( textarea, textarea-inner );
 	cursor: text;
 }
 
@@ -511,7 +511,7 @@ input.range slidertrack {
 	margin-top: 3dp;
 	height: 22dp;
 	image-color: #ecc;
-	decorator: ninepatch( range-track, range-track-inner, 1.0 );
+	decorator: ninepatch( range-track, range-track-inner );
 }
 input.range sliderbar {
 	margin-left: -8dp;
