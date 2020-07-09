@@ -122,6 +122,8 @@ public:
 	/// some operations may require to dirty these manually, such as when moving an element into another.
 	void DirtyInheritedProperties();
 
+	/// Dirties all properties with a given unit on the current element (*not* recursive).
+	void DirtyPropertiesWithUnit(Property::Unit unit);
 	/// Dirties all properties with a given unit on the current element and recursively on all children.
 	void DirtyPropertiesWithUnitRecursive(Property::Unit unit);
 

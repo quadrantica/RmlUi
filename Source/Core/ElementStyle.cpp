@@ -445,7 +445,7 @@ void ElementStyle::DirtyChildDefinitions()
 		element->GetChild(i)->GetStyle()->DirtyDefinition();
 }
 
-void ElementStyle::DirtyPropertiesWithUnitRecursive(Property::Unit unit)
+void ElementStyle::DirtyPropertiesWithUnit(Property::Unit unit)
 {
 	// Dirty all the properties of this element that use the unit.
 	for (auto it = Iterate(); !it.AtEnd(); ++it)
@@ -456,6 +456,11 @@ void ElementStyle::DirtyPropertiesWithUnitRecursive(Property::Unit unit)
 		if (property.unit == unit)
 			DirtyProperty(id);
 	}
+}
+
+void ElementStyle::DirtyPropertiesWithUnitRecursive(Property::Unit unit)
+{
+	DirtyPropertiesWithUnit(unit);
 
 	// Now dirty all of our descendant's properties that use the unit.
 	int num_children = element->GetNumChildren(true);

@@ -75,11 +75,12 @@ public:
 class SpritesheetPropertyParser : public AbstractPropertyParser {
 private:
 	String image_source;
+	float image_scale = 1.f;
 	SpriteDefinitionList sprite_definitions;
 
 	PropertyDictionary properties;
 	PropertySpecification specification;
-	PropertyId id_rx, id_ry, id_rw, id_rh;
+	PropertyId id_rx, id_ry, id_rw, id_rh, id_src_scale;
 	ShorthandId id_rectangle;
 
 public:
@@ -90,6 +91,7 @@ public:
 		id_rw = specification.RegisterProperty("rectangle-w", "", false, false).AddParser("length").GetId();
 		id_rh = specification.RegisterProperty("rectangle-h", "", false, false).AddParser("length").GetId();
 		id_rectangle = specification.RegisterShorthand("rectangle", "rectangle-x, rectangle-y, rectangle-w, rectangle-h", ShorthandType::FallThrough);
+		id_src_scale = specification.RegisterProperty("src-scale", "", false, false).AddParser("number_percent").GetId();
 	}
 
 	const String& GetImageSource() const
@@ -100,18 +102,35 @@ public:
 	{
 		return sprite_definitions;
 	}
+	float GetImageScale() const
+	{
+		return image_scale;
+	}
 
 	void Clear() {
+		image_scale = 1.f;
 		image_source.clear();
 		sprite_definitions.clear();
 	}
 
 	bool Parse(const String& name, const String& value) override
 	{
-		static const String str_src = "src";
-		if (name == str_src)
+		if (name == "src")
 		{
 			image_source = value;
+		}
+		else if (name == "src-scale")
+		{
+			if (!specification.ParsePropertyDeclaration(properties, id_src_scale, value))
+				return false;
+
+			if (const Property* property = properties.GetProperty(id_src_scale))
+			{
+				if (property->unit == Property::PERCENT)
+					image_scale = 0.01f * property->Get<float>();
+				else
+					image_scale = property->Get<float>();
+			}
 		}
 		else
 		{
@@ -412,6 +431,7 @@ int StyleSheetParser::Parse(StyleSheetNode* node, Stream* _stream, const StyleSh
 
 						const String& image_source = spritesheet_property_parser.GetImageSource();
 						const SpriteDefinitionList& sprite_definitions = spritesheet_property_parser.GetSpriteDefinitions();
+						const float image_scale = spritesheet_property_parser.GetImageScale();
 						
 						if (at_rule_name.empty())
 						{
@@ -425,9 +445,14 @@ int StyleSheetParser::Parse(StyleSheetNode* node, Stream* _stream, const StyleSh
 						{
 							Log::Message(Log::LT_WARNING, "No image source (property 'src') specified for spritesheet '%s'. At %s:%d", at_rule_name.c_str(), stream_file_name.c_str(), line_number);
 						}
+						else if (image_scale <= 0.0f || image_scale >= 100.f)
+						{
+							Log::Message(Log::LT_WARNING, "Image scale value (property 'src-scale') must be larger than 0.0 and smaller than 100.0, given %g. In spritesheet '%s'. At %s:%d", image_scale, at_rule_name.c_str(), stream_file_name.c_str(), line_number);
+						}
 						else
 						{
-							spritesheet_list.AddSpriteSheet(at_rule_name, image_source, stream_file_name, (int)line_number, sprite_definitions);
+							const float image_inv_scale = 1.0f / image_scale;
+							spritesheet_list.AddSpriteSheet(at_rule_name, image_source, stream_file_name, (int)line_number, image_inv_scale, sprite_definitions);
 						}
 
 						spritesheet_property_parser.Clear();

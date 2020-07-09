@@ -1606,6 +1606,10 @@ void Element::OnLayout()
 {
 }
 
+void Element::OnDpRatioChange()
+{
+}
+
 // Called when attributes on the element are changed.
 void Element::OnAttributeChange(const ElementAttributes& changed_attributes)
 {
@@ -2648,6 +2652,19 @@ void Element::UpdateTransformState()
 	{
 		transform_state.reset();
 	}
+}
+
+void Element::DirtyDpRatio()
+{
+	GetElementDecoration()->DirtyDecorators();
+	GetStyle()->DirtyPropertiesWithUnit(Property::DP);
+
+	OnDpRatioChange();
+
+	// Now dirty all of our descendant's properties that use the unit.
+	const int num_children = GetNumChildren(true);
+	for (int i = 0; i < num_children; ++i)
+		GetChild(i)->DirtyDpRatio();
 }
 
 } // namespace Rml

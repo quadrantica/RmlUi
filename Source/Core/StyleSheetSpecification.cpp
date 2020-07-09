@@ -46,6 +46,7 @@ static StyleSheetSpecification* instance = nullptr;
 struct DefaultStyleSheetParsers {
 	PropertyParserNumber number = PropertyParserNumber(Property::NUMBER);
 	PropertyParserNumber length = PropertyParserNumber(Property::LENGTH, Property::PX);
+	PropertyParserNumber number_percent = PropertyParserNumber(Property::NUMBER | Property::PERCENT, Property::PX);
 	PropertyParserNumber length_percent = PropertyParserNumber(Property::LENGTH_PERCENT, Property::PX);
 	PropertyParserNumber number_length_percent = PropertyParserNumber(Property::NUMBER_LENGTH_PERCENT, Property::PX);
 	PropertyParserNumber angle = PropertyParserNumber(Property::ANGLE, Property::RAD);
@@ -238,6 +239,7 @@ void StyleSheetSpecification::RegisterDefaultParsers()
 {
 	RegisterParser("number", &default_parsers->number);
 	RegisterParser("length", &default_parsers->length);
+	RegisterParser("number_percent", &default_parsers->number_percent);
 	RegisterParser("length_percent", &default_parsers->length_percent);
 	RegisterParser("number_length_percent", &default_parsers->number_length_percent);
 	RegisterParser("angle", &default_parsers->angle);

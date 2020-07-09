@@ -145,9 +145,6 @@ private:
 	/// Returns true if the document has been marked as needing a re-layout.
 	bool IsLayoutDirty() override;
 
-	/// Updates all sizes defined by the 'lp' unit.
-	void DirtyDpProperties();
-
 	/// Updates the layout if necessary.
 	void UpdateLayout();
 

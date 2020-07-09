@@ -432,11 +432,6 @@ bool ElementDocument::IsLayoutDirty()
 	return layout_dirty;
 }
 
-void ElementDocument::DirtyDpProperties()
-{
-	GetStyle()->DirtyPropertiesWithUnitRecursive(Property::DP);
-}
-
 // Repositions the document if necessary.
 void ElementDocument::OnPropertyChange(const PropertyIdSet& changed_properties)
 {
