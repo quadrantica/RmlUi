@@ -66,11 +66,28 @@ static HCURSOR cursor_text = nullptr;
 static HCURSOR cursor_unavailable = nullptr;
 
 
+#ifndef DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+#define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 ((HANDLE)-4)
+#endif
+#ifndef WM_DPICHANGED
+#define WM_DPICHANGED 0x02E0
+#endif
+
+// Declare pointers to the DPI aware Windows API functions.
+using ProcSetProcessDpiAwarenessContext = BOOL(WINAPI*)(HANDLE value);
+using ProcGetDpiForWindow = UINT(WINAPI*)(HWND hwnd);
+using ProcAdjustWindowRectExForDpi = BOOL(WINAPI*)(LPRECT lpRect, DWORD dwStyle, BOOL bMenu, DWORD dwExStyle, UINT dpi);
+
+static ProcSetProcessDpiAwarenessContext procSetProcessDpiAwarenessContext = NULL;
+static ProcGetDpiForWindow procGetDpiForWindow = NULL;
+static ProcAdjustWindowRectExForDpi procAdjustWindowRectExForDpi = NULL;
+
+
 static void UpdateDpi()
 {
-	if(has_dpi_support)
+	if (has_dpi_support)
 	{
-		UINT dpi = GetDpiForWindow(window_handle);
+		UINT dpi = procGetDpiForWindow(window_handle);
 		if (dpi != 0)
 		{
 			window_dpi = dpi;
@@ -118,6 +135,22 @@ bool Shell::Initialise()
 	file_interface = std::make_unique<ShellFileInterface>(root);
 	Rml::SetFileInterface(file_interface.get());
 
+	// See if we have Per Monitor V2 DPI awareness. Requires Windows 10, version 1703.
+	procSetProcessDpiAwarenessContext = (ProcSetProcessDpiAwarenessContext)GetProcAddress(
+		GetModuleHandle(TEXT("User32.dll")),
+		"SetProcessDpiAwarenessContext"
+	);
+	procGetDpiForWindow = (ProcGetDpiForWindow)GetProcAddress(
+		GetModuleHandle(TEXT("User32.dll")),
+		"GetDpiForWindow"
+	);
+	procAdjustWindowRectExForDpi = (ProcAdjustWindowRectExForDpi)GetProcAddress(
+		GetModuleHandle(TEXT("User32.dll")),
+		"AdjustWindowRectExForDpi"
+	);
+
+	has_dpi_support = (procSetProcessDpiAwarenessContext != NULL && procGetDpiForWindow != NULL && procAdjustWindowRectExForDpi != NULL);
+
 	return result;
 }
 
@@ -163,17 +196,11 @@ Rml::String Shell::FindSamplesRoot()
 	return Rml::String();
 }
 
+
 bool Shell::OpenWindow(const char* in_name, ShellRenderInterfaceExtensions *_shell_renderer, unsigned int width, unsigned int height, bool allow_resize)
 {
-	// See if we have Per Monitor V2 DPI awareness. Requires Windows 10, version 1703.
-	FARPROC proc_SetProcessDpiAwarenessContext = GetProcAddress(
-		GetModuleHandle(TEXT("User32.dll")),
-		"SetProcessDpiAwarenessContext"
-	);
-	has_dpi_support = (proc_SetProcessDpiAwarenessContext != NULL);
-
 	// Activate Per Monitor V2.
-	if (has_dpi_support && !SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2))
+	if (has_dpi_support && !procSetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2))
 	{
 		has_dpi_support = false;
 	}
@@ -239,7 +266,7 @@ bool Shell::OpenWindow(const char* in_name, ShellRenderInterfaceExtensions *_she
 	window_rect.right = window_width;
 	window_rect.bottom = window_height;
 	if (has_dpi_support)
-		AdjustWindowRectExForDpi(&window_rect, style, FALSE, extended_style, window_dpi);
+		procAdjustWindowRectExForDpi(&window_rect, style, FALSE, extended_style, window_dpi);
 	else
 		AdjustWindowRectEx(&window_rect, style, FALSE, extended_style);
 

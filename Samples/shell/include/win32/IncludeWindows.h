@@ -29,12 +29,10 @@
 #ifndef RMLUI_SHELL_WIN32_INCLUDEWINDOWS_H
 #define RMLUI_SHELL_WIN32_INCLUDEWINDOWS_H
 
-#if !defined _WIN32_WINNT || _WIN32_WINNT < 0x0501
-	#undef NTDDI_VERSION
+#if !defined _WIN32_WINNT || _WIN32_WINNT < 0x0601
 	#undef _WIN32_WINNT
-	// Target Windows 10, Build 1703
-	#define NTDDI_VERSION 0x0A000002
-	#define _WIN32_WINNT 0x0A00
+	// Target Windows 7
+	#define _WIN32_WINNT 0x0601
 #endif
 
 #define UNICODE
