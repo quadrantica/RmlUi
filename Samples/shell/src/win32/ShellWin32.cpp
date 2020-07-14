@@ -34,7 +34,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <shlwapi.h>
-#pragma comment( lib  , "Shlwapi.lib"  )
 
 static LRESULT CALLBACK WindowProcedure(HWND window_handle, UINT message, WPARAM w_param, LPARAM l_param);
 
@@ -354,7 +353,7 @@ void Shell::DisplayError(const char* fmt, ...)
 	buffer[len + 1] = '\0';
 	va_end(argument_list);
 
-	MessageBox(window_handle, (LPCWSTR)Rml::StringUtilities::ToUTF16(buffer).c_str(), L"Shell Error", MB_OK);
+	MessageBoxW(window_handle, (LPCWSTR)Rml::StringUtilities::ToUTF16(buffer).c_str(), L"Shell Error", MB_OK);
 }
 
 void Shell::Log(const char* fmt, ...)
@@ -374,7 +373,7 @@ void Shell::Log(const char* fmt, ...)
 	buffer[len + 1] = '\0';
 	va_end(argument_list);
 
-	OutputDebugString((LPCWSTR)Rml::StringUtilities::ToUTF16(buffer).c_str());
+	OutputDebugStringW((LPCWSTR)Rml::StringUtilities::ToUTF16(buffer).c_str());
 }
 
 double Shell::GetElapsedTime() 
