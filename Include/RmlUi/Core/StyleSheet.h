@@ -102,6 +102,9 @@ public:
 
 	/// Get sprite located in any spritesheet within this stylesheet.
 	const Sprite* GetSprite(const String& name) const;
+	
+	/// Activate a sprite sheet with the given name, making its sprites override all others with the same name.
+	bool ActivateSpritesheet(const String& name);
 
 	/// Returns the compiled element definition for a given element hierarchy. A reference count will be added for the
 	/// caller, so another should not be added. The definition should be released by removing the reference count.

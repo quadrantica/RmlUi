@@ -33,19 +33,25 @@
 namespace Rml {
 
 
-Spritesheet::Spritesheet(const String& name, const String& image_source, const String& definition_source,
-	int definition_line_number, float sprite_display_scale, const Texture& texture)
-	: name(name), image_source(image_source), definition_source(definition_source),
-	definition_line_number(definition_line_number), sprite_display_scale(sprite_display_scale), texture(texture)
+Spritesheet::Spritesheet(const String& name, const String& image_source, const String& definition_source, int definition_line_number,
+	float sprite_display_scale, float rectangles_scale, const Texture& texture, SpriteDefinitionList&& sprite_definitions)
+	: name(name), image_source(image_source), definition_source(definition_source), definition_line_number(definition_line_number),
+	sprite_display_scale(sprite_display_scale), rectangles_scale(rectangles_scale), texture(texture), sprite_definitions(std::move(sprite_definitions))
 {}
 
-bool SpritesheetList::AddSpriteSheet(const String& name, const String& image_source, const String& definition_source, int definition_line_number, float sprite_display_scale, const SpriteDefinitionList& sprite_definitions)
+bool SpritesheetList::AddSpriteSheet(const String& name, const String& image_source, const String& definition_source, int definition_line_number,
+	float sprite_display_scale, float rectangles_scale, SpriteDefinitionList&& sprite_definitions)
 {
 	// Load the texture
 	Texture texture;
 	texture.Set(image_source, definition_source);
 
-	auto sprite_sheet = std::make_shared<Spritesheet>(name, image_source, definition_source, definition_line_number, sprite_display_scale, texture);
+	auto sprite_sheet = std::make_shared<Spritesheet>(name, image_source, definition_source, definition_line_number,
+		sprite_display_scale, rectangles_scale, texture, std::move(sprite_definitions));
+
+	if (!sprite_sheet)
+		return false;
+
 	auto result = spritesheet_map.emplace(name, sprite_sheet);
 	if (!result.second)
 	{
@@ -53,22 +59,40 @@ bool SpritesheetList::AddSpriteSheet(const String& name, const String& image_sou
 		return false;
 	}
 
-	StringList& sprite_names = sprite_sheet->sprite_names;
-
 	// Insert all the sprites with names not already defined in the global sprite list.
-	for (auto& sprite_definition : sprite_definitions)
+	for (auto& sprite_definition : sprite_sheet->sprite_definitions)
 	{
-		const String& sprite_name = sprite_definition.first;
-		const Rectangle& sprite_rectangle = sprite_definition.second;
-		auto sprite_result = sprite_map.emplace(sprite_name, Sprite{ sprite_rectangle, sprite_sheet.get() });
-		if (sprite_result.second)
-		{
-			sprite_names.push_back(sprite_name);
-		}
-		else
+		const String& sprite_name = sprite_definition.name;
+		const Rectangle& sprite_rectangle = sprite_definition.rectangle;
+		bool inserted = sprite_map.emplace(sprite_name, Sprite{ sprite_rectangle, sprite_sheet.get() }).second;
+		if (!inserted)
 		{
 			Log::Message(Log::LT_WARNING, "Sprite '%s' has the same name as an existing sprite, skipped. See %s:%d", sprite_name.c_str(), definition_source.c_str(), definition_line_number);
 		}
+	}
+
+	return true;
+}
+
+bool SpritesheetList::ActivateSpritesheet(const String& name)
+{
+	auto it = spritesheet_map.find(name);
+	if (it == spritesheet_map.end())
+	{
+		Log::Message(Log::LT_WARNING, "Could not activate spritesheet '%s', no spritesheet with the given name found.", name.c_str());
+		return false;
+	}
+	
+	const Spritesheet* sprite_sheet = it->second.get();
+	RMLUI_ASSERT(sprite_sheet);
+
+	// Insert all the sprites with names not already defined in the global sprite list.
+	for (const SpriteDefinition& sprite_definition : sprite_sheet->sprite_definitions)
+	{
+		const String& sprite_name = sprite_definition.name;
+		const Rectangle& sprite_rectangle = sprite_definition.rectangle;
+		auto& sprite = sprite_map[sprite_name];
+		sprite = Sprite{ sprite_rectangle, sprite_sheet };
 	}
 
 	return true;
@@ -85,6 +109,15 @@ const Sprite* SpritesheetList::GetSprite(const String& name) const
 }
 
 
+const Spritesheet* SpritesheetList::GetSpritesheet(const String& name) const
+{
+	auto it = spritesheet_map.find(name);
+	if (it != spritesheet_map.end())
+		return it->second.get();
+
+	return nullptr;
+}
+
 void SpritesheetList::Merge(const SpritesheetList& other)
 {
 	for (auto& pair : other.spritesheet_map)
@@ -97,8 +130,10 @@ void SpritesheetList::Merge(const SpritesheetList& other)
 		if (sheet_inserted)
 		{
 			// The sprite sheet was succesfully added, now try to add each sprite to the global list.
-			for (const String& sprite_name  : sheet.sprite_names)
+			for (const SpriteDefinition& sprite_definition : sheet.sprite_definitions)
 			{
+				const String& sprite_name = sprite_definition.name;
+
 				// Lookup the sprite in the other map.
 				auto it_sprite = other.sprite_map.find(sprite_name);
 				if (it_sprite != other.sprite_map.end())
@@ -109,7 +144,9 @@ void SpritesheetList::Merge(const SpritesheetList& other)
 
 					if (!inserted)
 					{
-						Log::Message(Log::LT_WARNING, "Duplicate sprite name '%s' found while merging style sheets, defined in %s:%d.", sprite_name.c_str(), sheet.definition_source.c_str(), sheet.definition_line_number);
+						// TODO: When inheriting sprites, duplicate sprite names are usually intended. Otherwise they
+						// are probably unintended. Maybe only warn if they are completely unrelated sprite sheets?
+						Log::Message(Log::LT_INFO, "Duplicate sprite name '%s' found while merging style sheets, defined in %s:%d.", sprite_name.c_str(), sheet.definition_source.c_str(), sheet.definition_line_number);
 					}
 				}
 				else
@@ -147,7 +184,7 @@ String SpritesheetList::ToString() const
 
 	for (auto& sheet : spritesheet_map)
 	{
-		result += CreateString(100, "  Sheet '%s'.   #Sprites %d.\n", sheet.first.c_str(), sheet.second->sprite_names.size());
+		result += CreateString(100, "  Sheet '%s'.   #Sprites %d.\n", sheet.first.c_str(), sheet.second->sprite_definitions.size());
 	}
 
 	result += CreateString(100, "\n#Sprites: %d\n", sprite_map.size());

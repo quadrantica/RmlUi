@@ -195,6 +195,17 @@ const SharedPtr<StyleSheet>& ElementDocument::GetStyleSheet() const
 	return style_sheet;
 }
 
+bool ElementDocument::ActivateSpritesheet(const String& name)
+{
+	bool result = style_sheet->ActivateSpritesheet(name);
+	if (result)
+	{
+		// TODO: This should dirty all users of sprites (eg. decorators, `img` element)
+		// and force them to update the sprites and possibly textures.
+	}
+	return result;
+}
+
 // Brings the document to the front of the document stack.
 void ElementDocument::PullToFront()
 {

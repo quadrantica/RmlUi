@@ -88,6 +88,9 @@ public:
 	/// Returns the document's style sheet.
 	const SharedPtr<StyleSheet>& GetStyleSheet() const override;
 
+	/// Activate a sprite sheet with the given name, making its sprites override all others with the same name.
+	bool ActivateSpritesheet(const String& name);
+
 	/// Brings the document to the front of the document stack.
 	void PullToFront();
 	/// Sends the document to the back of the document stack.

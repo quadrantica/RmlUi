@@ -76,41 +76,47 @@ class SpritesheetPropertyParser : public AbstractPropertyParser {
 private:
 	String image_source;
 	float image_scale = 1.f;
+	float rectangles_scale = 1.f;
 	SpriteDefinitionList sprite_definitions;
 
 	PropertyDictionary properties;
 	PropertySpecification specification;
-	PropertyId id_rx, id_ry, id_rw, id_rh, id_src_scale;
+	PropertyId id_rx, id_ry, id_rw, id_rh, id_scale, id_rectangles_scale;
 	ShorthandId id_rectangle;
 
 public:
-	SpritesheetPropertyParser() : specification(4, 1) 
+	SpritesheetPropertyParser() : specification(16, 1) 
 	{
 		id_rx = specification.RegisterProperty("rectangle-x", "", false, false).AddParser("length").GetId();
 		id_ry = specification.RegisterProperty("rectangle-y", "", false, false).AddParser("length").GetId();
 		id_rw = specification.RegisterProperty("rectangle-w", "", false, false).AddParser("length").GetId();
 		id_rh = specification.RegisterProperty("rectangle-h", "", false, false).AddParser("length").GetId();
 		id_rectangle = specification.RegisterShorthand("rectangle", "rectangle-x, rectangle-y, rectangle-w, rectangle-h", ShorthandType::FallThrough);
-		id_src_scale = specification.RegisterProperty("src-scale", "", false, false).AddParser("number_percent").GetId();
+		id_scale = specification.RegisterProperty("[type]-scale", "", false, false).AddParser("number_percent").GetId();
+	}
+	void Clear()
+	{
+		image_scale = 1.f;
+		rectangles_scale = 1.f;
+		image_source.clear();
+		sprite_definitions.clear();
 	}
 
 	const String& GetImageSource() const
 	{
 		return image_source;
 	}
-	const SpriteDefinitionList& GetSpriteDefinitions() const
+	SpriteDefinitionList StealSpriteDefinitions()
 	{
-		return sprite_definitions;
+		return std::move(sprite_definitions);
 	}
 	float GetImageScale() const
 	{
 		return image_scale;
 	}
-
-	void Clear() {
-		image_scale = 1.f;
-		image_source.clear();
-		sprite_definitions.clear();
+	float GetRectanglesScale() const
+	{
+		return rectangles_scale;
 	}
 
 	bool Parse(const String& name, const String& value) override
@@ -119,17 +125,21 @@ public:
 		{
 			image_source = value;
 		}
-		else if (name == "src-scale")
+		else if (name == "src-scale" || name == "rectangles-scale")
 		{
-			if (!specification.ParsePropertyDeclaration(properties, id_src_scale, value))
+			float& target_value = (name == "src-scale" ? image_scale : rectangles_scale);
+
+			if (!specification.ParsePropertyDeclaration(properties, id_scale, value))
 				return false;
 
-			if (const Property* property = properties.GetProperty(id_src_scale))
+			if (const Property* property = properties.GetProperty(id_scale))
 			{
 				if (property->unit == Property::PERCENT)
-					image_scale = 0.01f * property->Get<float>();
+					target_value = 0.01f * property->Get<float>();
+				else if (property->unit == Property::NUMBER)
+					target_value = property->Get<float>();
 				else
-					image_scale = property->Get<float>();
+					return false;
 			}
 		}
 		else
@@ -147,7 +157,7 @@ public:
 			if (auto property = properties.GetProperty(id_rh))
 				rectangle.height = ComputeAbsoluteLength(*property, 1.f);
 
-			sprite_definitions.emplace_back(name, rectangle);
+			sprite_definitions.push_back(SpriteDefinition{ name, rectangle });
 		}
 
 		return true;
@@ -423,6 +433,30 @@ int StyleSheetParser::Parse(StyleSheetNode* node, Stream* _stream, const StyleSh
 					}
 					else if (at_rule_identifier == "spritesheet")
 					{
+						StringList name_parent;
+						StringUtilities::ExpandString(name_parent, at_rule_name, ':');
+
+						if (name_parent.size() == 0 || name_parent.size() > 2 || name_parent[0].empty() || (name_parent.size() == 2 && name_parent[1].empty()))
+						{
+							Log::Message(Log::LT_WARNING, "Spritesheet syntax error at %s:%d. Use syntax: '@spritesheet name [ : parent_spritesheet] { ... }'.", stream_file_name.c_str(), line_number);
+							return false;
+						}
+						const String& name = name_parent[0];
+						const Spritesheet* parent_spritesheet = nullptr;
+
+						if (name_parent.size() == 2)
+						{
+							const String& parent = name_parent[1];
+
+							parent_spritesheet = spritesheet_list.GetSpritesheet(parent);
+
+							if (!parent_spritesheet)
+							{
+								Log::Message(Log::LT_WARNING, "Spritesheet '%s' declared, deriving from parent '%s', but parent spritesheet could not be found. While parsing @spritesheet at-rule at %s:%d. Use syntax: '@spritesheet name [ : parent_spritesheet] { ... }'.", name.c_str(), parent.c_str(), stream_file_name.c_str(), line_number);
+								return false;
+							}
+						}
+
 						// This is reasonably heavy to initialize, so we make it static
 						static SpritesheetPropertyParser spritesheet_property_parser;
 						spritesheet_property_parser.Clear();
@@ -430,8 +464,51 @@ int StyleSheetParser::Parse(StyleSheetNode* node, Stream* _stream, const StyleSh
 						ReadProperties(spritesheet_property_parser);
 
 						const String& image_source = spritesheet_property_parser.GetImageSource();
-						const SpriteDefinitionList& sprite_definitions = spritesheet_property_parser.GetSpriteDefinitions();
+						SpriteDefinitionList sprite_definitions = spritesheet_property_parser.StealSpriteDefinitions();
 						const float image_scale = spritesheet_property_parser.GetImageScale();
+						const float rectangles_scale = spritesheet_property_parser.GetRectanglesScale();
+
+						auto scale_rectangle = [](Rectangle& rect, float factor) {
+							rect.width *= factor;
+							rect.height *= factor;
+							rect.x *= factor;
+							rect.y *= factor;
+						};
+
+						if (rectangles_scale != 1.0f)
+						{
+							for (auto& sprite : sprite_definitions)
+								scale_rectangle(sprite.rectangle, rectangles_scale);
+						}
+
+						if (parent_spritesheet)
+						{
+							//cTODO: Test properly that this actually works as intended.
+							// Insert parent sprites.
+							const size_t i_begin_parents = sprite_definitions.size();
+							sprite_definitions.insert(sprite_definitions.end(), parent_spritesheet->sprite_definitions.begin(), parent_spritesheet->sprite_definitions.end());
+
+							// Invert the applied scale on the parent rectangles, and apply our own scale.
+							const float scale_parent_rectangles_factor = rectangles_scale / parent_spritesheet->rectangles_scale;
+
+							if (scale_parent_rectangles_factor != 1.0f)
+							{
+								for (auto it = sprite_definitions.begin() + i_begin_parents; it != sprite_definitions.end(); ++it)
+									scale_rectangle(it->rectangle, scale_parent_rectangles_factor);
+							}
+
+							auto cmp_name_less = [](const SpriteDefinition& left, const SpriteDefinition& right) -> bool { return left.name < right.name; };
+							auto cmp_name_equal = [](const SpriteDefinition& left, const SpriteDefinition& right) -> bool { return left.name == right.name; };
+
+							// Remove parent sprites that have been overrided.
+							std::stable_sort(sprite_definitions.begin(), sprite_definitions.end(), cmp_name_less);
+							
+							sprite_definitions.erase(
+								std::unique(sprite_definitions.begin(), sprite_definitions.end(), cmp_name_equal),
+								sprite_definitions.end()
+							);
+						}
+
 						
 						if (at_rule_name.empty())
 						{
@@ -452,7 +529,7 @@ int StyleSheetParser::Parse(StyleSheetNode* node, Stream* _stream, const StyleSh
 						else
 						{
 							const float sprite_display_scale = 1.0f / image_scale;
-							spritesheet_list.AddSpriteSheet(at_rule_name, image_source, stream_file_name, (int)line_number, sprite_display_scale, sprite_definitions);
+							spritesheet_list.AddSpriteSheet(name, image_source, stream_file_name, (int)line_number, sprite_display_scale, rectangles_scale, std::move(sprite_definitions));
 						}
 
 						spritesheet_property_parser.Clear();

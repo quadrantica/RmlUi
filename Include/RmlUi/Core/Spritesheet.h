@@ -47,6 +47,11 @@ struct Sprite {
 };
 using SpriteMap = UnorderedMap<String, Sprite>; // key: sprite name (as given in @spritesheet)
 
+struct SpriteDefinition {
+	String name;
+	Rectangle rectangle;
+};
+using SpriteDefinitionList = std::vector<SpriteDefinition>;
 
 /**
 	Spritesheet holds a list of sprite names given in the @spritesheet at-rule in RCSS.
@@ -57,15 +62,18 @@ struct Spritesheet {
 	String definition_source;
 	int definition_line_number;
 	float sprite_display_scale; // The inverse of the 'src-scale' spritesheet property.
+	float rectangles_scale;      // The 'rectangles-scale' spritesheet property.
 	Texture texture;
-	StringList sprite_names;
+	SpriteDefinitionList sprite_definitions;
 
-	Spritesheet(const String& name, const String& image_source, const String& definition_source,
-		int definition_line_number, float sprite_display_scale, const Texture& texture);
+	Spritesheet(const String& name, const String& image_source, const String& definition_source, int definition_line_number,
+		float sprite_display_scale, float rectangles_scale, const Texture& texture, SpriteDefinitionList&& sprite_definitions);
 };
 
+
+
 using SpritesheetMap = SmallUnorderedMap<String, SharedPtr<const Spritesheet>>; // key: spritesheet name (as given in @spritesheet)
-using SpriteDefinitionList = std::vector<std::pair<String, Rectangle>>; // Sprite name and rectangle
+
 
 
 /**
@@ -74,11 +82,18 @@ using SpriteDefinitionList = std::vector<std::pair<String, Rectangle>>; // Sprit
 class SpritesheetList {
 public:
 	/// Adds a new sprite sheet to the list and inserts all sprites with unique names into the global list.
-	bool AddSpriteSheet(const String& name, const String& image_source, const String& definition_source, int definition_line_number, float sprite_display_scale, const SpriteDefinitionList& sprite_definitions);
-
+	bool AddSpriteSheet(const String& name, const String& image_source, const String& definition_source, int definition_line_number,
+		float sprite_display_scale, float rectangles_scale, SpriteDefinitionList&& sprite_definitions);
+	
+	/// Activate a sprite sheet with the given name, making its sprites override all others with the same name.
+	bool ActivateSpritesheet(const String& name);
 	/// Get a sprite from its name if it exists.
 	/// Note: The pointer is invalidated whenever another sprite is added. Do not store it around.
 	const Sprite* GetSprite(const String& name) const;
+
+	/// Get a spritesheet from its name if it exists.
+	/// Note: The pointer is invalidated whenever another spritesheet is added. Do not store it around.
+	const Spritesheet* GetSpritesheet(const String& name) const;
 
 	/// Merge 'other' into this.
 	void Merge(const SpritesheetList& other);

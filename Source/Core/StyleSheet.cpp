@@ -138,6 +138,11 @@ const Sprite* StyleSheet::GetSprite(const String& name) const
 	return spritesheet_list.GetSprite(name);
 }
 
+bool StyleSheet::ActivateSpritesheet(const String& name)
+{
+	return spritesheet_list.ActivateSpritesheet(name);
+}
+
 DecoratorsPtr StyleSheet::InstanceDecoratorsFromString(const String& decorator_string_value, const SharedPtr<const PropertySource>& source) const
 {
 	// Decorators are declared as
