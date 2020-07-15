@@ -54,17 +54,13 @@ scrollbarhorizontal sliderbar:active { background: #666; }
 class DemoWindow : public Rml::EventListener
 {
 public:
-	DemoWindow(const Rml::String &title, const Rml::Vector2f &position, Rml::Context *context)
+	DemoWindow(const Rml::String &title, Rml::Context *context)
 	{
 		using namespace Rml;
 		document = context->LoadDocument("basic/demo/data/demo.rml");
 		if (document != nullptr)
 		{
-			{
-				document->GetElementById("title")->SetInnerRML(title);
-				document->SetProperty(PropertyId::Left, Property(position.x, Property::DP));
-				document->SetProperty(PropertyId::Top, Property(position.y, Property::DP));
-			}
+			document->GetElementById("title")->SetInnerRML(title);
 
 			// Add sandbox default text.
 			if (auto source = static_cast<Rml::ElementFormControl*>(document->GetElementById("sandbox_rml_source")))
@@ -505,7 +501,7 @@ int main(int RMLUI_UNUSED_PARAMETER(argc), char** RMLUI_UNUSED_PARAMETER(argv))
 
 	Shell::LoadFonts("assets/");
 
-	demo_window = std::make_unique<DemoWindow>("Demo sample", Rml::Vector2f(150, 50), context);
+	demo_window = std::make_unique<DemoWindow>("Demo sample", context);
 	demo_window->GetDocument()->AddEventListener(Rml::EventId::Keydown, demo_window.get());
 	demo_window->GetDocument()->AddEventListener(Rml::EventId::Keyup, demo_window.get());
 	demo_window->GetDocument()->AddEventListener(Rml::EventId::Animationend, demo_window.get());

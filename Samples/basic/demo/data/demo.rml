@@ -38,8 +38,14 @@
 
 body.window
 {
-	width: 1300dp;
-	height: 750dp;
+	position: absolute;
+	top: 50dp;
+	right: 100dp;
+	bottom: 50dp;
+	left: 100dp;
+	
+	width: auto;
+	height: auto;
 	min-width: 1090dp;
 	min-height: 300dp;
 	max-width: -1px;
