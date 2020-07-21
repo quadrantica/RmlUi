@@ -31,7 +31,6 @@
 #include "../../Include/RmlUi/Core/Geometry.h"
 #include "../../Include/RmlUi/Core/ElementUtilities.h"
 #include "../../Include/RmlUi/Core/PropertyDefinition.h"
-#include <array>
 
 namespace Rml {
 
@@ -43,7 +42,7 @@ DecoratorNinePatch::~DecoratorNinePatch()
 {
 }
 
-bool DecoratorNinePatch::Initialise(const Rectangle& _rect_outer, const Rectangle& _rect_inner, const std::array<Property, 4>* _edges, const Texture& _texture, float _sprite_display_scale)
+bool DecoratorNinePatch::Initialise(const Rectangle& _rect_outer, const Rectangle& _rect_inner, const Array<Property, 4>* _edges, const Texture& _texture, float _sprite_display_scale)
 {
 	rect_outer = _rect_outer;
 	rect_inner = _rect_inner;
@@ -51,7 +50,7 @@ bool DecoratorNinePatch::Initialise(const Rectangle& _rect_outer, const Rectangl
 	sprite_display_scale = _sprite_display_scale;
 
 	if (_edges)
-		edges = std::make_unique< std::array<Property, 4> >(*_edges);
+		edges = MakeUnique< Array<Property, 4> >(*_edges);
 
 	int texture_index = AddTexture(_texture);
 	return (texture_index >= 0);
@@ -133,8 +132,8 @@ DecoratorDataHandle DecoratorNinePatch::GenerateElementData(Element* element) co
 
 	/* Now we have all the coordinates we need. Expand the diagonal vertices to the 16 individual vertices. */
 
-	std::vector<Vertex>& vertices = data->GetVertices();
-	std::vector<int>& indices = data->GetIndices();
+	Vector<Vertex>& vertices = data->GetVertices();
+	Vector<int>& indices = data->GetIndices();
 
 	vertices.resize(4 * 4);
 
@@ -207,7 +206,7 @@ SharedPtr<Decorator> DecoratorNinePatchInstancer::InstanceDecorator(const String
 	RMLUI_UNUSED(name);
 
 	bool edges_set = false;
-	std::array<Property,4> edges;
+	Array<Property,4> edges;
 	for (int i = 0; i < 4; i++)
 	{
 		edges[i] = *properties.GetProperty(edge_ids[i]);
@@ -245,7 +244,7 @@ SharedPtr<Decorator> DecoratorNinePatchInstancer::InstanceDecorator(const String
 		return nullptr;
 	}
 
-	auto decorator = std::make_shared<DecoratorNinePatch>();
+	auto decorator = MakeShared<DecoratorNinePatch>();
 
 	if (!decorator->Initialise(sprite_outer->rectangle, sprite_inner->rectangle, (edges_set ? &edges : nullptr),
 		sprite_outer->sprite_sheet->texture, sprite_outer->sprite_sheet->sprite_display_scale))

@@ -55,7 +55,7 @@ static const EventTypeSpec WINDOW_EVENTS[] = {
 
 static Rml::Context* context = nullptr;
 static ShellRenderInterfaceExtensions* shell_renderer;
-static std::unique_ptr<ShellFileInterface> file_interface;
+static Rml::UniquePtr<ShellFileInterface> file_interface;
 
 static WindowRef window;
 static timeval start_time;
@@ -86,7 +86,7 @@ bool Shell::Initialise()
 
 	Rml::String root = FindSamplesRoot();
 
-	file_interface = std::make_unique<ShellFileInterface>(root);
+	file_interface = Rml::MakeUnique<ShellFileInterface>(root);
 	Rml::SetFileInterface(file_interface.get());
 
 	return true;

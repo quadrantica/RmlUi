@@ -51,7 +51,7 @@ struct SpriteDefinition {
 	String name;
 	Rectangle rectangle;
 };
-using SpriteDefinitionList = std::vector<SpriteDefinition>;
+using SpriteDefinitionList = Vector<SpriteDefinition>;
 
 /**
 	Spritesheet holds a list of sprite names given in the @spritesheet at-rule in RCSS.

@@ -98,7 +98,7 @@ public:
 				Rml::StreamMemory stream((Rml::byte*)style_sheet_content.data(), style_sheet_content.size());
 				stream.SetSourceURL("sandbox://default_rcss");
 
-				rml_basic_style_sheet = std::make_shared<Rml::StyleSheet>();
+				rml_basic_style_sheet = MakeShared<Rml::StyleSheet>();
 				rml_basic_style_sheet->LoadStyleSheet(&stream);
 			}
 
@@ -220,7 +220,7 @@ public:
 	{
 		if (iframe && rml_basic_style_sheet)
 		{
-			auto style = std::make_shared<Rml::StyleSheet>();
+			auto style = Rml::MakeShared<Rml::StyleSheet>();
 			Rml::StreamMemory stream((const Rml::byte*)string.data(), string.size());
 			stream.SetSourceURL("sandbox://rcss");
 
@@ -252,7 +252,7 @@ private:
 
 Rml::Context* context = nullptr;
 ShellRenderInterfaceExtensions *shell_renderer;
-std::unique_ptr<DemoWindow> demo_window;
+Rml::UniquePtr<DemoWindow> demo_window;
 
 struct TweeningParameters {
 	Rml::Tween::Type type = Rml::Tween::Linear;
@@ -501,7 +501,7 @@ int main(int RMLUI_UNUSED_PARAMETER(argc), char** RMLUI_UNUSED_PARAMETER(argv))
 
 	Shell::LoadFonts("assets/");
 
-	demo_window = std::make_unique<DemoWindow>("Demo sample", context);
+	demo_window = Rml::MakeUnique<DemoWindow>("Demo sample", context);
 	demo_window->GetDocument()->AddEventListener(Rml::EventId::Keydown, demo_window.get());
 	demo_window->GetDocument()->AddEventListener(Rml::EventId::Keyup, demo_window.get());
 	demo_window->GetDocument()->AddEventListener(Rml::EventId::Animationend, demo_window.get());

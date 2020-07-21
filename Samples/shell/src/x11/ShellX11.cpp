@@ -57,7 +57,7 @@ static Rml::String clipboard_text;
 static int window_width = 0;
 static int window_height = 0;
 
-static std::unique_ptr<ShellFileInterface> file_interface;
+static Rml::UniquePtr<ShellFileInterface> file_interface;
 
 static Display* display = nullptr;
 static XVisualInfo* visual_info = nullptr;
@@ -97,7 +97,7 @@ bool Shell::Initialise()
 	Rml::String root = FindSamplesRoot();
 	bool result = !root.empty();
 
-	file_interface = std::make_unique<ShellFileInterface>(root);
+	file_interface = Rml::MakeUnique<ShellFileInterface>(root);
 	Rml::SetFileInterface(file_interface.get());
 
 	return result;
